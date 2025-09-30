@@ -94,6 +94,37 @@ jobs:
           push: true
           tags: tak1stprogrammer/backend:latest
 
+# ---------- Deploy Frontend (Vercel) ----------
+  deploy-frontend:
+    needs: [frontend-build-test]
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Download frontend artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-artifacts
+          path: FrontEnd/dist
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+      - name: Deploy to Vercel
+        run: |
+          cd FrontEnd/dist
+          vercel --prod \
+            --token ${{ secrets.VERCEL_TOKEN }} \
+            --scope ${{ secrets.VERCEL_ORG_ID }} \
+            --name second-hand-ev-battery-trading \
+            --yes \
+            --build-env NEXT_PUBLIC_API_URL=https://second-hand-ev-and-battery-trading.onrender.com
+        env:
+          VERCEL_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+      - name: List FrontEnd contents for debug
+        run: ls -la FrontEnd/dist
+          
   # ---------- Cleanup old artifacts ----------
   cleanup:
     if: always()
