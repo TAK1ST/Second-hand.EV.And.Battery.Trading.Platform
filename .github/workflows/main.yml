@@ -1,0 +1,120 @@
+name: CI/CD Pipeline - Second-hand EV And Battery Trading Platform
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  NODE_VERSION: '22'
+
+jobs:
+  # ---------- Backend Build & Test ----------
+  backend-build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: cd BackEnd && dotnet restore
+      - run: cd BackEnd && dotnet build --no-restore --configuration Release
+      - run: |
+          cd BackEnd
+          if dotnet test --list-tests > /dev/null 2>&1; then
+            dotnet test --no-build --configuration Release --verbosity normal
+          else
+            echo "No test projects found, skipping tests"
+          fi
+      - run: cd BackEnd && dotnet publish --no-build --configuration Release --output ../publish
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-artifacts
+          path: publish/
+          retention-days: 14
+
+  # ---------- Frontend Build & Test ----------
+  frontend-build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'FrontEnd/package-lock.json'
+      - run: cd FrontEnd && npm ci
+      - run: cd FrontEnd && npm run lint || true
+      - run: cd FrontEnd && npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-artifacts
+          path: FrontEnd/dist/
+          retention-days: 14
+
+  # ---------- Security Scan ----------
+  security-scan:
+    needs: [backend-build-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/super-linter@v4
+        env:
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_CSHARP: true
+          VALIDATE_JAVASCRIPT_ES: true
+
+  # ---------- Deploy Backend (Docker Hub) ----------
+  deploy-backend:
+    needs: [backend-build-test]
+    environment: production     
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: List directory contents
+        run: ls -la  # Kiểm tra thư mục root
+      - name: List BackEnd contents
+        run: ls -la ./BackEnd  # Kiểm tra nội dung thư mục BackEnd
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./BackEnd  # Sử dụng thư mục BackEnd làm context
+          file: ./BackEnd/Dockerfile  # Đường dẫn tới Docker file
+          push: true
+          tags: tak1stprogrammer/backend:latest
+
+  # ---------- Cleanup old artifacts ----------
+  cleanup:
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            const oldArtifacts = artifacts.data.artifacts.filter(a => {
+              const createdAt = new Date(a.created_at);
+              const daysOld = (Date.now() - createdAt) / (1000 * 60 * 60 * 24);
+              return daysOld > 7;
+            });
+            for (const artifact of oldArtifacts) {
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id,
+              });
+            }
