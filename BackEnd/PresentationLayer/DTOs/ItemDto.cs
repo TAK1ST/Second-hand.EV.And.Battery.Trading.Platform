@@ -2,7 +2,7 @@
 
 public class ItemDto
 {
-    public string Name { get; set; }
-    public int Quantity { get; set; }
-    public int Price { get; set; }
+    public string OrderId { get; set; }
+    public int ItemId { get; set; }
+    public int Amount { get; set; }
 }
