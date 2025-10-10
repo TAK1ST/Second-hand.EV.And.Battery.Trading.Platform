@@ -24,7 +24,11 @@ namespace PresentationLayer
 
             //  Đăng ký DbContext (DB First)
             builder.Services.AddDbContext<EvBatteryTradingContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-            builder.Services.AddSignalR();
+            builder.Services.AddSignalR(e =>
+            {
+                e.EnableDetailedErrors = true;
+                e.MaximumReceiveMessageSize = 102400000;
+            });
             // DI cho Repository + Service
             //---Services
             builder.Services.AddScoped<IAuthService, AuthService>();
@@ -67,6 +71,23 @@ namespace PresentationLayer
                         IssuerSigningKey = new SymmetricSecurityKey(
                             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
                         )
+                    };
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            var accessToken = context.Request.Query["access_token"];
+
+                            // If the request is for our hub...
+                            var path = context.HttpContext.Request.Path;
+                            if (!string.IsNullOrEmpty(accessToken) &&
+                                (path.StartsWithSegments("/notificationHub")))
+                            {
+                                // Read the token from the query string
+                                context.Token = accessToken;
+                            }
+                            return Task.CompletedTask;
+                        }
                     };
                 });
 
@@ -176,6 +197,7 @@ namespace PresentationLayer
 
             app.UseHttpsRedirection();
             app.UseCors("AllowReactApp");
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();

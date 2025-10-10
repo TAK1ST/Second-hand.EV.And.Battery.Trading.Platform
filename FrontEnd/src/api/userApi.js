@@ -10,9 +10,7 @@ const userApi = {
         const response = await axios.get(baseURL + '/' + id,
             {headers: {
                             // This line is essential for authorized endpoints
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }}
+                            'Authorization': `Bearer ${token}`                        }}
         )
         return response.data;
     }

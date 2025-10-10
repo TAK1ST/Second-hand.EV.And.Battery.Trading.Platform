@@ -16,7 +16,9 @@ import SellerHistory from "../components/HistorySold";
 import PaymentSuccessPage from "../pages/PaymentSuccessPage";
 import PaymentFailPage from "../pages/PaymentFailPage";
 import PurchasePage from "../pages/PurchasePage";
-
+import Chat from "../components/Chat"
+import Support from "../pages/Support";
+import NotificationManagement from "../pages/NotificationManagement";
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -50,6 +52,10 @@ export const router = createBrowserRouter([
       {
         path: "/purchase",
         element: <PurchasePage/>
+      },
+      {
+        path: "/support",
+        element:<NotificationManagement/>
       }
     ],
   },

@@ -1,78 +1,24 @@
-import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom';
 import { IoMdHome } from "react-icons/io";
 import { RiAuctionFill } from "react-icons/ri";
-import { MdOutlineAttachMoney } from "react-icons/md";
 import Logo from '../components/Logo';
 import ProfileDropDown from './ProfileDropDown';
-import { FaShoppingCart } from "react-icons/fa";
-import NotificationDropDown from '../NotificationDropDown';
-import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import { FaShoppingCart, FaSuitcase } from "react-icons/fa";
+import NotificationDropDown from '../components/NotificationDropDown';
+import { LuShoppingBag } from 'react-icons/lu';
 
 
-function Navbar() {
-const [connection, setConnection] = useState(null);
-  const [notifications, setNotifications] = useState([]); // <-- State for incoming messages
-  const [isConnected, setIsConnected] = useState(false);
-
-  // This function is passed down to the child to SEND a message
-  const sendNotification = async (message) => {
-    if (connection && connection.state === 'Connected') {
-      try {
-        // Invokes the "SendNotification" method on your C# Hub
-        await connection.invoke("SendMessage", message);
-        console.log("Notification sent successfully!");
-      } catch (e) {
-        console.error("Error sending notification: ", e);
-      }
-    } else {
-      alert("Cannot send notification, the connection is not active.");
-    }
-  };
-  useEffect(() => {
-    const newConnection = new HubConnectionBuilder()
-      .withUrl("https://localhost:7272/notificationHub") // Make sure this URL is correct
-      .build();
-
-    setConnection(newConnection);
-  }, []); // <-- This effect runs only once to create the connection object
-
-  useEffect(() => {
-    if (connection) {
-      connection.start()
-        .then(() => {
-          console.log('SignalR Connected.');
-          setIsConnected(true);
-
-          // *** ADD THIS LISTENER ***
-          // Listens for messages from the server with the name "ReceiveNotification"
-          connection.on("ReceiveMessage", message => {
-            console.log("Notification Received: ", message);
-              setNotifications(prevNotifications => [message, ...prevNotifications]);
-          });
-        })
-        .catch(e => console.error('Connection failed: ', e));
-
-      connection.onclose(() => {
-        console.log('SignalR connection closed.');
-        setIsConnected(false);
-      });
-    }
-
-    // Cleanup on component unmount
-    return () => {
-      connection?.stop();
-    };
-  }, [connection]); // <-- This effect runs when the connection object is set
-
-
+function Navbar({data, notifications, unreadCount, markAsRead}) {
+  
   const leftmenu = [
     { name: 'Home', link: '/', icon: <IoMdHome /> },
     { name: 'Auction', link: '/auctions', icon: <RiAuctionFill /> }
   ]
   const rightmenu = [
     { name: <NotificationDropDown 
-              sendMessage={sendNotification} 
+              notifications={notifications}
+              unreadCount={unreadCount}
+              markAsRead={markAsRead}
             />, icon: <IoMdHome /> },
     { name: 'Support', link: '/support' }]
   return (
@@ -87,7 +33,7 @@ const [connection, setConnection] = useState(null);
                 <span className="ml-2">{item.name}</span>
               </Link>
             ))}
-            {data.data && data.data.role == "Manager" ? (
+            {data && data.role == "Manager" ? (
               <Link to="/manage" className="mx-4 hover:text-green-300 flex items-center">
                 <FaSuitcase />
                 <span className="ml-2">Manager</span>
@@ -108,9 +54,9 @@ const [connection, setConnection] = useState(null);
                 <span className="ml-2">{item.name}</span>
               </Link>
             ))}
-            {data.data ? (
+            {data ? (
               <div className="ml-4 pt-5">
-                <ProfileDropDown users={data.data} />
+                <ProfileDropDown users={data} />
               </div>
             )
               : (
