@@ -12,6 +12,7 @@ using Microsoft.OpenApi.Models;
 using Net.payOS;
 using System.Text;
 using Application.DTOs;
+using PresentationLayer.Hubs;
 
 namespace PresentationLayer
 {
@@ -23,7 +24,7 @@ namespace PresentationLayer
 
             //  Đăng ký DbContext (DB First)
             builder.Services.AddDbContext<EvBatteryTradingContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+            builder.Services.AddSignalR();
             // DI cho Repository + Service
             //---Services
             builder.Services.AddScoped<IAuthService, AuthService>();
@@ -90,7 +91,8 @@ namespace PresentationLayer
                     {
                         policy.WithOrigins("http://localhost:5173")
                               .AllowAnyHeader()
-                              .AllowAnyMethod();
+                              .AllowAnyMethod()
+                              .AllowCredentials();
                     });
             });
             // register PayOS via DI (Dependency Injection)
@@ -177,6 +179,7 @@ namespace PresentationLayer
             app.UseAuthorization();
 
             app.MapControllers();
+            app.MapHub<NotificationHub>("/notificationHub");
             app.Run();
         }
     }
