@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Application.IRepositories
 {
-    public interface IItemRepository //: IRepository<Item>
+    public interface IItemRepository
     {
         Task<Item> AddAsync(Item item, CancellationToken ct = default);
         Task<Item?> GetByIdAsync(int itemId, CancellationToken ct = default);
@@ -36,5 +36,10 @@ namespace Application.IRepositories
         IQueryable<ItemDto> QueryItemsWithSeller();
 
         Task<IEnumerable<ItemBoughtDto>> GetBoughtItemsWithDetailsAsync(int userId);
+
+        //Feature: Seller Dashboard
+        Task<int> CountAllBySellerAsync(int sellerId);
+        Task<int> CountByStatusAsync(int sellerId, string status);
+        Task<decimal> GetTotalRevenueAsync(int sellerId);
     }
 }

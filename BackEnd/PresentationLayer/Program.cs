@@ -1,4 +1,4 @@
-using Application.IRepositories.IBiddingRepositories;
+﻿using Application.IRepositories.IBiddingRepositories;
 using Application.IRepositories;
 using Application.IServices;
 using Application.Services;
@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Net.payOS;
 using System.Text;
+using Application.DTOs;
 
 namespace PresentationLayer
 {
@@ -29,15 +30,26 @@ namespace PresentationLayer
             builder.Services.AddScoped<IItemService, ItemService>();
             builder.Services.AddScoped<IOrderService, OrderService>();
             builder.Services.AddScoped<IUserService, UserService>();
-            builder.Services.AddScoped<IEvDetailService, EvDetailService>();
+            builder.Services.AddScoped<IEVDetailService, EVDetailService>();
             builder.Services.AddScoped<IBatteryDetailService, BatteryDetailService>();
+            builder.Services.AddScoped<IHistorySoldService, HistorySoldService>();
+            builder.Services.AddScoped<ISellerDashboardService, SellerDashboardService>();
+            builder.Services.AddScoped<IAuctionService, AuctionService>();
+            builder.Services.AddScoped<IOrderItemService, OrderItemService>();
             //---Repositories
+            builder.Services.AddScoped<IAuctionRepository, AuctionRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<IItemRepository, ItemRepository>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-            builder.Services.AddScoped<IEvDetailRepository, EvDetailRepository>();
+            builder.Services.AddScoped<IEVDetailRepository, EVDetailRepository>();
             builder.Services.AddScoped<IBatteryDetailRepository, BatteryDetailRepository>();
-            //builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            builder.Services.AddScoped<IHistorySoldRepository, HistorySoldRepository>();
+            builder.Services.AddScoped<IBidRepository, BidRepository>();
+            builder.Services.AddScoped<IWalletRepository, WalletRepository>();
+            builder.Services.AddScoped<IWalletTransactionRepository, WalletTransactionRepository>();
+            builder.Services.AddScoped<IEmailRepository, EmailTemplateRepository>();
+            builder.Services.AddScoped<IPaymentDetailRepository, PaymentDetailRepository>();
+            builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
 
             // JWT Authentication
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -70,7 +82,6 @@ namespace PresentationLayer
             builder.Services.AddAuthorization();
 
             // Add services to the container.
-
             builder.Services.AddControllers();
             builder.Services.AddCors(options =>
             {
@@ -104,12 +115,14 @@ namespace PresentationLayer
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-            builder.Configuration.AddUserSecrets<Program>();
+            builder.Configuration.AddUserSecrets<Program>(); 
+            builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+            builder.Services.AddScoped<IMailService, MailService>();
+            builder.Services.AddScoped<IEmailRepository, EmailTemplateRepository>();
             builder.Services.AddScoped<IWalletTransactionRepository, WalletTransactionRepository>();
             builder.Services.AddScoped<IWalletRepository, WalletRepository>();
             builder.Services.AddScoped<IBidRepository, BidRepository>();
             builder.Services.AddScoped<IAuctionService, AuctionService>();
-            builder.Services.AddScoped<IItemBiddingRepository, ItemBiddingRepository>();
             builder.Services.AddDbContext<EvBatteryTradingContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
             //builder.Services.AddSwaggerGen();
@@ -153,7 +166,6 @@ namespace PresentationLayer
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -165,7 +177,6 @@ namespace PresentationLayer
             app.UseAuthorization();
 
             app.MapControllers();
-
             app.Run();
         }
     }

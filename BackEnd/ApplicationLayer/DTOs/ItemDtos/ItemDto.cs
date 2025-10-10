@@ -22,11 +22,11 @@ namespace Application.DTOs.ItemDtos
 
         public int Quantity { get; set; }
 
-        public DateOnly? CreatedAt { get; set; }
+        public DateOnly CreatedAt { get; set; }
 
-        public DateOnly? UpdatedAt { get; set; }
+        public DateOnly UpdatedAt { get; set; }
 
-        //public int? UpdatedBy { get; set; }
+        public int? UpdatedBy { get; set; }
         //public string? SellerName { get; set; }
         //public string Status { get; set; } = "active";
         //public bool? IsDeleted { get; set; }
